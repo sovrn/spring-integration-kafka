@@ -65,8 +65,10 @@ public class KafkaNativeOffsetManager extends AbstractOffsetManager implements I
 	private final Map<Partition, BrokerAddress> offsetManagerBrokerAddressCache;
 
 	private final RetryTemplate retryTemplate;
+	
+	private String offsetMetadata;
 
-	/**
+    /**
 	 * @param zookeeperConnect
 	 *            the zookeeper connection information
 	 * @param initialOffsets
@@ -104,6 +106,14 @@ public class KafkaNativeOffsetManager extends AbstractOffsetManager implements I
 		setReferenceTimestamp(referenceTimestamp);
 	}
 
+	/**
+	 * @param offsetMetadata
+	 *            the offsetMetadata to set
+	 */
+	public void setOffsetMetadata(String offsetMetadata) {
+		this.offsetMetadata = offsetMetadata;
+	}
+
 	@Override
 	protected Long doGetOffset(final Partition partition) {
 		final Long offset = retryTemplate.execute(new RetryCallback<Long, RuntimeException>() {
@@ -138,7 +148,7 @@ public class KafkaNativeOffsetManager extends AbstractOffsetManager implements I
 			public Void doWithRetry(RetryContext context) throws RuntimeException {
 				context.setAttribute(PARTITION_ATTRIBUTE, partition);
 				Result<Void> result = getOffsetManagerConnection(partition).commitOffsetsForConsumer(
-						getConsumerId(), Maps.immutable.of(partition, offset).castToMap());
+						getConsumerId(), Maps.immutable.of(partition, offset).castToMap(), offsetMetadata);
 				checkResultForErrors(result, partition);
 				return null;
 			}

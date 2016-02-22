@@ -68,6 +68,17 @@ public interface Connection {
 	Result<Void> commitOffsetsForConsumer(String consumerId, Map<Partition, Long> offsets) throws ConsumerException;
 
 	/**
+	 * Update offsets in the native Kafka offset management system.
+	 * @param consumerId the id of the consumer
+	 * @param offsets the offsets, indexed by {@link Partition}
+	 * @param metadata the metadata to store with each offset
+	 * @return any errors, an empty {@link Result} in case of success
+	 * @throws ConsumerException the ConsumerException if any underlying error
+	 */
+	Result<Void> commitOffsetsForConsumer(String consumerId, Map<Partition, Long> offsets, String metadata)
+	        throws ConsumerException;
+
+	/**
 	 * Retrieve the leader broker addresses for all the partitions in the given topics.
 	 * @param topics the topics whose partitions we query for
 	 * @return broker addresses, indexed by {@link Partition}

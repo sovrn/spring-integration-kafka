@@ -46,6 +46,7 @@ import kafka.javaapi.consumer.SimpleConsumer;
 import kafka.javaapi.message.ByteBufferMessageSet;
 import kafka.message.MessageAndOffset;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.util.Assert;
@@ -211,12 +212,18 @@ public class DefaultConnection implements Connection {
 		}
 		return resultBuilder.build();
 	}
-
+	
 	@Override
 	public Result<Void> commitOffsetsForConsumer(String consumerId, Map<Partition, Long> offsets)
 			throws ConsumerException {
+		return commitOffsetsForConsumer(consumerId, offsets, OffsetAndMetadata.NoMetadata());
+	}
+
+	@Override
+	public Result<Void> commitOffsetsForConsumer(String consumerId, Map<Partition, Long> offsets, String metadata)
+			throws ConsumerException {
 		Map<TopicAndPartition, OffsetAndMetadata> requestInfo =
-				MapIterate.collect(offsets, new CreateRequestInfoMapEntryFunction());
+				MapIterate.collect(offsets, new CreateRequestInfoMapEntryFunction(metadata));
 		OffsetCommitResponse offsetCommitResponse = null;
 		try {
 			offsetCommitResponse = simpleConsumer.commitOffsets(
@@ -312,11 +319,19 @@ public class DefaultConnection implements Connection {
 	@SuppressWarnings("serial")
 	private static class CreateRequestInfoMapEntryFunction
 			implements Function2<Partition, Long, Pair<TopicAndPartition, OffsetAndMetadata>> {
+		private final String metadata;
+
+		/**
+		 * @param metadata
+		 */
+		CreateRequestInfoMapEntryFunction(final String metadata) {
+			this.metadata = StringUtils.defaultIfBlank(metadata, OffsetAndMetadata.NoMetadata());
+		}
 
 		@Override
 		public Pair<TopicAndPartition, OffsetAndMetadata> value(Partition partition, Long offset) {
 			return Tuples.pair(new TopicAndPartition(partition.getTopic(), partition.getId()),
-					new OffsetAndMetadata(offset, OffsetAndMetadata.NoMetadata(), OffsetAndMetadata.InvalidTime()));
+					new OffsetAndMetadata(offset, metadata, OffsetAndMetadata.InvalidTime()));
 		}
 
 	}
